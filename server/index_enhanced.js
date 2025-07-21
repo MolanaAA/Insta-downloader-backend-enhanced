@@ -31,11 +31,14 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, '../client/build')));
 
 // Create downloads directory if it doesn't exist
-const downloadsDir = path.join(__dirname, 'downloads');
-fs.ensureDirSync(downloadsDir);
-
-// Serve downloaded files
-app.use('/downloads', express.static(downloadsDir));
+const downloadsDir = process.env.VERCEL ? '/tmp' : path.join(__dirname, 'downloads');
+if (!process.env.VERCEL) {
+  fs.ensureDirSync(downloadsDir);
+}
+// Serve downloaded files (only if not on Vercel)
+if (!process.env.VERCEL) {
+  app.use('/downloads', express.static(downloadsDir));
+}
 
 // Advanced anti-detection configuration
 const CONFIG = {
@@ -685,7 +688,7 @@ app.post('/api/download', async (req, res) => {
       // Cloudinary upload failed, fallback to local file
       response.message = 'Video downloaded locally (cloud upload failed)';
       response.filePath = downloadResult.localPath;
-      response.downloadUrl = `/downloads/${filename}`;
+      response.downloadUrl = process.env.VERCEL ? null : `/downloads/${filename}`;
       if (downloadResult.uploadError) {
         response.uploadError = downloadResult.uploadError;
       }
